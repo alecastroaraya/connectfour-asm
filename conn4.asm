@@ -1,62 +1,35 @@
-;--------------------------------------------Portada-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-; Tarea de ASM: Connect Four
-; Curso: Arquitectura de Computadores
-; Grupo: 2
-; Escuela de Computacion
-; Instituto Tecnologico de Costa Rica
-; Fecha de entrega: 4 de noviembre del 2020
-; Estudiante: Alejandro Castro Araya
-; Carne: 2020034944
-; Profesor: Kirstein Gatjens
-;--------------------------------------------Manual de Usuario-------------------------------------------------------------------------------------------------------------------------------------------------------------------
-; Este programa permite jugar una partida de Connect Four por cada ejecucion. Recibe entradas mediante la presion de una tecla y tiene varias posibles opciones de entrada.
-; Las posibles opciones son:
-; F1      Despliega la ayuda del programa.
-; A       Despliega el acerca de del programa.
-; 1-7     Se indica que se eche una ficha en la columna escogida para jugar el turno (es del uno al siete).
-; F5      Se genera una jugada aleatoria valida para el jugador que la pida, es decir genera un numero aleatorio con los tics de reloj y este numero sera la columna escogida aleatoriamente.
-; V       Se voltea el tablero.
-; ESC     Interrumpe la ejecucion de la partida y sale al sistema operativo.
-;--------------------------------------------Analisis de resultados-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-;+-----------------------------------------------------------------------------------------------------+------+--------------------------------------------------------------------------------------------------------------------------------+
-;|                                            Parte                                                    | Nota | Explicacion Adicional                                                                                                          |
-;+-----------------------------------------------------------------------------------------------------+------+--------------------------------------------------------------------------------------------------------------------------------+
-;| Desplegar mini acerca de con A.                                                                     | A    | Funciona correctamente                                                                                                         |
-;| Desplegar tablero y tablero inicial.																   | A    | Funciona correctamente                                                                                                         |
-;| Llevar la secuencia de jugadas correctamente.                                                       | A    | Funciona correctamente                                                                                                         |
-;| Determinar el jugador ganador correctamente.                                                        | A    | Funciona correctamente                                                                                                         |
-;| Despliegue de mensajes y errores con int 21h.                                                       | A    | Funciona correctamente                                                                                                         |
-;| Recibir presiones de teclas con int 16h.                                                            | A    | Funciona correctamente                                                                                                         |
-;| Verificar que la columna seleccionada no este llena.                                                | A    | Funciona correctamente                                                                                                         |
-;| Desplegar la ayuda del programa con F1.                                                             | A    | Funciona correctamente                                                                                                         |
-;| Echar una ficha en una columna del 1-7 dependiendo de la escogida.                                  | A    | Funciona correctamente                                                                                                         |
-;| Generar una jugada aleatoria valida para el jugador pidiendo interrupcion de tics de reloj con F5.  | A    | Funciona correctamente                                                                                                         |
-;| Voltear el tablero con V.                                                                           | B    | Las ultimas dos columnas no se voltean al presionar el boton de voltear el tablero.                                            |
-;| Interrumpir la ejecuion de la partida con ESC.                                                      | A    | Funciona correctamente                                                                                                         |
-;| Documentación (Portada, manual de usuario y analisis de resultados con ABCD y comentarios).         | A    | Escrita correctamente                                                                                                          |
-;+-----------------------------------------------------------------------------------------------------+------+--------------------------------------------------------------------------------------------------------------------------------+
+; Connect Four ASM
+;--------------------------------------------Instructions-------------------------------------------------------------------------------------------------------------------------------------------------------------------
+; This ASM program lets you play Connect Four either with another human or against an AI. Receives input via various different keys.
+; The controls are:
+; F1      Displays the instructions for the game.
+; A       Displays info about the game.
+; 1-7     Put a token in the selected column (can be from one to seven)
+; F5      Puts a token in a valid random column. Works for both players. Can be used as an AI if there is no second human player.
+; V       Flip the board over.
+; ESC     Exits the game.
 
 data segment
 
-	acercade db 'Arquitectura de Computadores Gr 2 Alejandro Castro Araya ' ,13, 10, 'Carne 2020034944 Ver. 0.74-3 02/11/2020 Tarea Connect Four', 13, 10, ' ', 13, 10, '$'
-	ayuda1 db 'Este programa permite jugar Connect Four mediante recibir una presion de tecla como entrada. Opciones:',13,10, 13,10, 'F1 -> Despliega la ayuda.',13,10, 'A -> Despliega el acerca de del programa.',13,10, '1-7 -> Echa una ficha en esa columna.',13,10, '',13,10,'$'
-	ayuda2 db 'F5 -> Genera y escoge una jugada aleatoria valida para el jugador actual.',13,10, 'V -> Se voltea el tablero.',13,10, '',13,10,'$'
-	errortecla db 'No presiono una tecla correcta. Terminando el programa...$'
-	errorlleno db 'Esta columna esta llena. Por favor ingrese una que no lo este.' ,13,10, 13,10, '$'
-	saliendo db 'La tecla ESC ha sido presionada. Saliendose...' ,13, 10, '$'
-	presionetecla db 'Por favor presione una tecla.' ,13, 10, '' , 13 ,10, '$'
+	acercade db 'Connect Four ASM ' ,13, 10, 'Made on 02/11/2020', 13, 10, ' ', 13, 10, '$'
+	ayuda1 db 'Connect Four ASM. Controls:',13,10, 13,10, 'F1 -> Displays instructions.',13,10, 'A -> Displays info about the game.',13,10, '1-7 -> Put a token in a column.',13,10, '',13,10,'$'
+	ayuda2 db 'F5 -> Randomly puts a token in a valid column.',13,10, 'V -> Flip the board.',13,10, '',13,10,'$'
+	errortecla db 'Invalid key press. Exiting game...$'
+	errorlleno db 'This column is full. Please select another one.' ,13,10, 13,10, '$'
+	saliendo db 'ESC key pressed. Exiting...' ,13, 10, '$'
+	presionetecla db 'Please press a key.' ,13, 10, '' , 13 ,10, '$'
 	columnas db 7 ; 7 columnas x 6 filas
 	filas db 6
 	connectfour dw 42 dup(0)
 	clonconnectfour dw 42 dup(0)
-	msgjugador1 db 'Jugador 1?',13,10, 13,10,'$'
-	msgjugador2 db 'Jugador 2?',13,10, 13,10,'$'
+	msgjugador1 db 'Player 1, pick a column from 1-7',13,10, 13,10,'$'
+	msgjugador2 db 'Player 2, pick a column from 1-7',13,10, 13,10,'$'
 	jugadoractual db 1
 	indiceexterno db 0
 	indiceinterno dw 0
-	msgganador1 db 'El jugador 1 ha ganado la partida!' ,13,10, '',13,10,'$'
-	msgganador2 db 'El jugador 2 ha ganado la partida!' ,13,10, '',13,10,'$'
-	msgempate db 'Hubo un empate!' ,13,10, '',13,10,'$'
+	msgganador1 db 'Player 1 wins!!!' ,13,10, '',13,10,'$'
+	msgganador2 db 'Player 2 wins!!!' ,13,10, '',13,10,'$'
+	msgempate db 'Draw!!!' ,13,10, '',13,10,'$'
 	contador1 db 0
 	contador2 db 0
 	contador3 db 0
